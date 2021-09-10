@@ -7,6 +7,8 @@ if(DEFINED ENV{SNAPCRAFT_BUILD_ENVIRONMENT})
     set(SNAPCRAFT_BUILD YES)
 endif()
 
+set(CMAKE_CXX_STANDARD 14)
+
 add_subdirectory(WebRTSP)
 
 find_package(Threads REQUIRED)
