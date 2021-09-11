@@ -33,8 +33,12 @@ int main(int argc, char *argv[])
 {
     LibGst libGst;
 
-    http::Config httpConfig {};
-    signalling::Config config {};
+    http::Config httpConfig {
+        .bindToLoopbackOnly = false
+    };
+    signalling::Config config {
+        .bindToLoopbackOnly = false
+    };
 
     GMainLoopPtr loopPtr(g_main_loop_new(nullptr, FALSE));
     GMainLoop* loop = loopPtr.get();
