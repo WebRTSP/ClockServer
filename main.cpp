@@ -10,28 +10,35 @@
 #include "Signalling/WsServer.h"
 #include "Signalling/ServerSession.h"
 #include "RtStreaming/GstRtStreaming/LibGst.h"
-#include "RtStreaming/GstRtStreaming/GstPipelineStreamer.h"
+#include "RtStreaming/GstRtStreaming/GstPipelineStreamer2.h"
 
 const char* ClockPipeline =
     "videotestsrc pattern=blue ! "
     "clockoverlay halignment=center valignment=center shaded-background=true font-desc=\"Sans, 36\" ! "
-    "x264enc ! video/x-h264, profile=baseline ! rtph264pay pt=99 config-interval=1 ! webrtcbin";
+    "x264enc ! video/x-h264, profile=baseline ! rtph264pay pt=99 config-interval=1";
 
-static std::unique_ptr<WebRTCPeer> CreatePeer(const std::string&)
+static std::unique_ptr<WebRTCPeer> CreatePeer(GstPipelineStreamer2* streamer, const std::string&)
 {
-    return std::make_unique<GstPipelineStreamer>(ClockPipeline);
+    return streamer->createPeer();
 }
 
 static std::unique_ptr<rtsp::ServerSession> CreateSession (
+    GstPipelineStreamer2* streamer,
     const std::function<void (const rtsp::Request*)>& sendRequest,
     const std::function<void (const rtsp::Response*)>& sendResponse) noexcept
 {
-    return std::make_unique<ServerSession>(CreatePeer, sendRequest, sendResponse);
+    return
+        std::make_unique<ServerSession>(
+            std::bind(CreatePeer, streamer, std::placeholders::_1),
+            sendRequest,
+            sendResponse);
 }
 
 int main(int argc, char *argv[])
 {
     LibGst libGst;
+
+    GstPipelineStreamer2 streamer(ClockPipeline);
 
     http::Config httpConfig {
         .bindToLoopbackOnly = false
@@ -58,7 +65,14 @@ int main(int argc, char *argv[])
     std::string configJs =
         fmt::format("const WebRTSPPort = {};\r\n", config.port);
     http::Server httpServer(httpConfig, configJs, loop);
-    signalling::WsServer server(config, loop, CreateSession);
+    signalling::WsServer server(
+        config,
+        loop,
+        std::bind(
+            CreateSession,
+            &streamer,
+            std::placeholders::_1,
+            std::placeholders::_2));
 
     if(httpServer.init(context) && server.init(context))
         g_main_loop_run(loop);
