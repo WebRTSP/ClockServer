@@ -29,6 +29,7 @@ static std::unique_ptr<rtsp::ServerSession> CreateSession (
 {
     return
         std::make_unique<ServerSession>(
+            ServerSession::IceServers { "stun://stun.l.google.com:19302" },
             std::bind(CreatePeer, streamer, std::placeholders::_1),
             sendRequest,
             sendResponse);
