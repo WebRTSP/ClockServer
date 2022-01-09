@@ -1,3 +1,5 @@
+[![webrtsp-clock](https://snapcraft.io/webrtsp-clock/badge.svg)](https://snapcraft.io/webrtsp-clock)
+
 ## WebRTSP Clock Server
 
 ### How to build it from sources and run (Ubuntu 20.10)
