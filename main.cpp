@@ -44,6 +44,12 @@ int main(int argc, char *argv[])
     http::Config httpConfig {
         .bindToLoopbackOnly = false
     };
+#ifdef SNAPCRAFT_BUILD
+    const gchar* snapPath = g_getenv("SNAP");
+    const gchar* snapName = g_getenv("SNAP_NAME");
+    if(snapPath && snapName)
+        httpConfig.wwwRoot = std::string(snapPath) + "/opt/" + snapName + "/www";
+#endif
     signalling::Config config {
         .bindToLoopbackOnly = false
     };
