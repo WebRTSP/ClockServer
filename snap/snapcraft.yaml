@@ -22,10 +22,14 @@ environment:
   GST_PLUGIN_SYSTEM_PATH: $SNAP/usr/lib/$SNAPCRAFT_ARCH_TRIPLET/gstreamer-1.0
   GST_PLUGIN_SCANNER: $SNAP/usr/libexec/$SNAPCRAFT_ARCH_TRIPLET/gstreamer-1.0/gst-plugin-scanner
   LD_LIBRARY_PATH: $SNAP/opt/${SNAP_NAME}/lib
+  FONTCONFIG_PATH: $SNAP/etc/fonts/conf.d
+  FONTCONFIG_FILE: $SNAP/etc/fonts/fonts.conf
 
 layout:
   /opt/webrtsp-clock/lib:
     symlink: $SNAP/opt/webrtsp-clock/lib
+  /usr/share/fonts:
+    bind: $SNAP/usr/share/fonts
 
 parts:
   lws:
@@ -87,6 +91,7 @@ parts:
       - gstreamer1.0-plugins-ugly
       - gstreamer1.0-nice
       - gstreamer1.0-x
+      - fonts-dejavu-core
 
 apps:
   clock:
