@@ -86,6 +86,7 @@ parts:
       - gstreamer1.0-plugins-bad
       - gstreamer1.0-plugins-ugly
       - gstreamer1.0-nice
+      - gstreamer1.0-x
 
 apps:
   clock:
