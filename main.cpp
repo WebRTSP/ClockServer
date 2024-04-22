@@ -10,9 +10,9 @@
 #include "Signalling/WsServer.h"
 #include "Signalling/ServerSession.h"
 #include "RtStreaming/GstRtStreaming/LibGst.h"
-#include "RtStreaming/GstRtStreaming/GstPipelineStreamer2.h"
+#include "RtStreaming/GstRtStreaming/GstPipelineStreamer.h"
 
-// #define USE_HW_ENCODER 1
+#define USE_HW_ENCODER 1
 
 const char* ClockPipeline =
     "videotestsrc pattern=blue ! video/x-raw, width=640, height=480, framerate=5/1 ! "
@@ -22,23 +22,22 @@ const char* ClockPipeline =
 #else
     "x264enc ! video/x-h264, level=(string)4, profile=(string)constrained-baseline ! "
 #endif
-    "rtph264pay pt=99 config-interval=-1";
+    "rtph264pay pt=99 config-interval=-1 ! webrtcbin";
 
-static std::unique_ptr<WebRTCPeer> CreatePeer(GstPipelineStreamer2* streamer, const std::string&)
+static std::unique_ptr<WebRTCPeer> CreatePeer(const std::string& /*uri*/)
 {
-    return streamer->createPeer();
+    return std::make_unique<GstPipelineStreamer>(ClockPipeline);
 }
 
 static std::unique_ptr<ServerSession> CreateSession (
     const WebRTCConfigPtr& webRTCConfig,
-    GstPipelineStreamer2* streamer,
     const std::function<void (const rtsp::Request*)>& sendRequest,
     const std::function<void (const rtsp::Response*)>& sendResponse) noexcept
 {
     return
         std::make_unique<ServerSession>(
             webRTCConfig,
-            std::bind(CreatePeer, streamer, std::placeholders::_1),
+            CreatePeer,
             sendRequest,
             sendResponse);
 }
@@ -46,8 +45,6 @@ static std::unique_ptr<ServerSession> CreateSession (
 int main(int argc, char *argv[])
 {
     LibGst libGst;
-
-    GstPipelineStreamer2 streamer(ClockPipeline);
 
     std::shared_ptr<WebRTCConfig> webRTCConfig = std::make_shared<WebRTCConfig>();
     webRTCConfig->iceServers = WebRTCConfig::IceServers { "stun://stun.l.google.com:19302" };
@@ -91,7 +88,6 @@ int main(int argc, char *argv[])
         std::bind(
             CreateSession,
             webRTCConfig,
-            &streamer,
             std::placeholders::_1,
             std::placeholders::_2));
 
