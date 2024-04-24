@@ -5,7 +5,7 @@
 
 #include "Helpers/LwsLog.h"
 #include "Http/Log.h"
-#include "Http/HttpServer.h"
+#include "Http/HttpMicroServer.h"
 #include "Signalling/Log.h"
 #include "Signalling/WsServer.h"
 #include "Signalling/ServerSession.h"
@@ -22,14 +22,15 @@ static std::unique_ptr<WebRTCPeer> CreatePeer(GstPipelineStreamer2* streamer, co
     return streamer->createPeer();
 }
 
-static std::unique_ptr<rtsp::ServerSession> CreateSession (
+static std::unique_ptr<ServerSession> CreateSession (
+    const WebRTCConfigPtr& webRTCConfig,
     GstPipelineStreamer2* streamer,
     const std::function<void (const rtsp::Request*)>& sendRequest,
     const std::function<void (const rtsp::Response*)>& sendResponse) noexcept
 {
     return
         std::make_unique<ServerSession>(
-            ServerSession::IceServers { "stun://stun.l.google.com:19302" },
+            webRTCConfig,
             std::bind(CreatePeer, streamer, std::placeholders::_1),
             sendRequest,
             sendResponse);
@@ -40,6 +41,9 @@ int main(int argc, char *argv[])
     LibGst libGst;
 
     GstPipelineStreamer2 streamer(ClockPipeline);
+
+    std::shared_ptr<WebRTCConfig> webRTCConfig = std::make_shared<WebRTCConfig>();
+    webRTCConfig->iceServers = WebRTCConfig::IceServers { "stun://stun.l.google.com:19302" };
 
     http::Config httpConfig {
         .bindToLoopbackOnly = false
@@ -71,17 +75,18 @@ int main(int argc, char *argv[])
 
     std::string configJs =
         fmt::format("const WebRTSPPort = {};\r\n", config.port);
-    http::Server httpServer(httpConfig, configJs, loop);
+    http::MicroServer httpServer(httpConfig, configJs, http::MicroServer::OnNewAuthToken(), g_main_context_default());
     signalling::WsServer server(
         config,
         loop,
         std::bind(
             CreateSession,
+            webRTCConfig,
             &streamer,
             std::placeholders::_1,
             std::placeholders::_2));
 
-    if(httpServer.init(context) && server.init(context))
+    if(httpServer.init() && server.init())
         g_main_loop_run(loop);
     else
         return -1;
