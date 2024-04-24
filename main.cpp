@@ -59,6 +59,8 @@ int main(int argc, char *argv[])
         .bindToLoopbackOnly = false
     };
 
+    InitLwsLogger(spdlog::level::warn);
+
     GMainLoopPtr loopPtr(g_main_loop_new(nullptr, FALSE));
     GMainLoop* loop = loopPtr.get();
 
