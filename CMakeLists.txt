@@ -9,6 +9,7 @@ endif()
 
 set(CMAKE_CXX_STANDARD 14)
 
+set(ONVIF_SUPPORT OFF CACHE BOOL "ONVIF support disabled")
 add_subdirectory(WebRTSP)
 
 file(GLOB SOURCES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
