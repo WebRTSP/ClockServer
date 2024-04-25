@@ -1,5 +1,5 @@
 name: webrtsp-clock
-base: core20
+base: core22
 summary: WebRTSP Clock Server
 adopt-info: clock
 description: |
@@ -11,7 +11,6 @@ confinement: strict
 
 architectures:
   - build-on: amd64
-  - build-on: i386
   - build-on: armhf
   - build-on: arm64
 
@@ -36,7 +35,7 @@ parts:
     plugin: cmake
     source-type: git
     source: https://github.com/warmcat/libwebsockets.git
-    source-branch: v4.2-stable
+    source-branch: v4.3-stable
     cmake-parameters:
       - -DLWS_WITHOUT_TESTAPPS=ON
       - -DLWS_WITH_GLIB=ON
@@ -44,34 +43,21 @@ parts:
     build-packages:
       - libssl-dev
     stage-packages:
-      - libssl1.1
-  nice:
-    plugin: meson
-    source-type: git
-    source: https://github.com/libnice/libnice.git
-    source-branch: latest-release
-    meson-parameters:
-      - --prefix=/opt/${SNAPCRAFT_PROJECT_NAME}
-    build-packages:
-      - pkg-config
-      - libglib2.0-dev
-      - gtk-doc-tools
-    stage-packages:
-      - libgstreamer1.0-0
+      - libssl3
   clock:
     plugin: cmake
     source-type: git
-    source: https://github.com/WebRTSP/ClockServer.git
+    source: .
     build-environment:
-      - PKG_CONFIG_PATH: $SNAPCRAFT_STAGE/opt/${SNAPCRAFT_PROJECT_NAME}/lib/pkgconfig:$SNAPCRAFT_STAGE/opt/${SNAPCRAFT_PROJECT_NAME}/lib/$SNAPCRAFT_ARCH_TRIPLET/pkgconfig:$PKG_CONFIG_PATH
+      - PKG_CONFIG_PATH: $SNAPCRAFT_STAGE/opt/${SNAPCRAFT_PROJECT_NAME}/lib/pkgconfig:$SNAPCRAFT_STAGE/opt/${SNAPCRAFT_PROJECT_NAME}/lib/$SNAPCRAFT_ARCH_TRIPLET/pkgconfig:${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}
     cmake-parameters:
+      - -DCMAKE_BUILD_TYPE=Release
       - -DCMAKE_INSTALL_PREFIX=/opt/${SNAPCRAFT_PROJECT_NAME}
     override-pull: |
-        snapcraftctl pull
-        snapcraftctl set-version "$(git describe --always)"
+        craftctl default
+        craftctl set version="$(git describe --always)"
     after:
       - lws
-      - nice
     build-packages:
       - g++
       - make
@@ -79,12 +65,14 @@ parts:
       - libconfig-dev
       - libgstreamer1.0-dev
       - libgstreamer-plugins-bad1.0-dev
+      - libmicrohttpd-dev
+      - libnice-dev
     stage-packages:
       - libconfig9
       - libslang2
       - libgpm2
       - libpulse0
-      - libx264-155
+      - libx264-163
       - libspdlog1
       - gstreamer1.0-plugins-good
       - gstreamer1.0-plugins-bad
@@ -92,6 +80,9 @@ parts:
       - gstreamer1.0-nice
       - gstreamer1.0-x
       - fonts-dejavu-core
+    prime:
+      - -usr/lib/arm-linux-gnueabihf/libde265.so.0.1.1
+      - -usr/lib/arm-linux-gnueabihf/libmpeg2.so.0.1.0
 
 apps:
   clock:
