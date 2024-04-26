@@ -12,10 +12,16 @@
 #include "RtStreaming/GstRtStreaming/LibGst.h"
 #include "RtStreaming/GstRtStreaming/GstPipelineStreamer2.h"
 
+// #define USE_HW_ENCODER 1
+
 const char* ClockPipeline =
     "videotestsrc pattern=blue ! video/x-raw, width=640, height=480, framerate=5/1 ! "
     "clockoverlay halignment=center valignment=center shaded-background=true font-desc=\"Sans, 36\" ! "
+#if USE_HW_ENCODER
+    "v4l2h264enc ! video/x-h264, level=(string)4, profile=(string)constrained-baseline ! "
+#else
     "x264enc ! video/x-h264, level=(string)4, profile=(string)constrained-baseline ! "
+#endif
     "rtph264pay pt=99 config-interval=-1";
 
 static std::unique_ptr<WebRTCPeer> CreatePeer(GstPipelineStreamer2* streamer, const std::string&)
