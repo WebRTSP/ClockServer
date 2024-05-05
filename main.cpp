@@ -10,28 +10,17 @@
 #include "Signalling/WsServer.h"
 #include "Signalling/ServerSession.h"
 #include "RtStreaming/GstRtStreaming/LibGst.h"
-#include "RtStreaming/GstRtStreaming/GstPipelineStreamer2.h"
+#include "RtStreaming/GstRtStreaming/GstCameraStreamer.h"
 
-// #define USE_HW_ENCODER 1
 
-const char* ClockPipeline =
-    "videotestsrc pattern=blue ! video/x-raw, width=640, height=480, framerate=5/1 ! "
-    "clockoverlay halignment=center valignment=center shaded-background=true font-desc=\"Sans, 36\" ! "
-#if USE_HW_ENCODER
-    "v4l2h264enc ! video/x-h264, level=(string)4, profile=(string)constrained-baseline ! "
-#else
-    "x264enc ! video/x-h264, level=(string)4, profile=(string)constrained-baseline ! "
-#endif
-    "rtph264pay pt=99 config-interval=-1";
-
-static std::unique_ptr<WebRTCPeer> CreatePeer(GstPipelineStreamer2* streamer, const std::string&)
+static std::unique_ptr<WebRTCPeer> CreatePeer(GstStreamingSource* streamer, const std::string&)
 {
     return streamer->createPeer();
 }
 
 static std::unique_ptr<ServerSession> CreateSession (
     const WebRTCConfigPtr& webRTCConfig,
-    GstPipelineStreamer2* streamer,
+    GstStreamingSource* streamer,
     const std::function<void (const rtsp::Request*)>& sendRequest,
     const std::function<void (const rtsp::Response*)>& sendResponse) noexcept
 {
@@ -47,7 +36,7 @@ int main(int argc, char *argv[])
 {
     LibGst libGst;
 
-    GstPipelineStreamer2 streamer(ClockPipeline);
+    GstCameraStreamer streamer;
 
     std::shared_ptr<WebRTCConfig> webRTCConfig = std::make_shared<WebRTCConfig>();
     webRTCConfig->iceServers = WebRTCConfig::IceServers { "stun://stun.l.google.com:19302" };

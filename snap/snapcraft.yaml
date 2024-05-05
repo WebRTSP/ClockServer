@@ -22,10 +22,13 @@ environment:
   GST_PLUGIN_SCANNER: $SNAP/opt/${SNAP_NAME}/libexec/gstreamer-1.0/gst-plugin-scanner
   FONTCONFIG_PATH: $SNAP/etc/fonts/conf.d
   FONTCONFIG_FILE: $SNAP/etc/fonts/fonts.conf
+  LIBCAMERA_LOG_LEVELS: "*:INFO"
 
 layout:
   /opt/${SNAPCRAFT_PROJECT_NAME}/lib:
     symlink: $SNAP/opt/${SNAPCRAFT_PROJECT_NAME}/lib
+  /opt/${SNAPCRAFT_PROJECT_NAME}/share/libcamera:
+    symlink: $SNAP/opt/${SNAPCRAFT_PROJECT_NAME}/share/libcamera
   /usr/share/fonts:
     bind: $SNAP/usr/share/fonts
 
@@ -63,24 +66,25 @@ parts:
       - bison
       - nasm
       - libsrtp2-dev
-      - libcairo2-dev
     meson-parameters:
       - --prefix=/opt/${SNAPCRAFT_PROJECT_NAME}
       - -Dauto_features=disabled
       - -Dgpl=enabled
       - -Dgstreamer:ptp-helper-permissions=none
       - -Dbase=enabled
-      - -Dgst-plugins-base:videotestsrc=enabled
-      - -Dgst-plugins-base:pango=enabled
       - -Dgood=enabled
       - -Dgst-plugins-good:rtpmanager=enabled
       - -Dgst-plugins-good:udp=enabled
       - -Dgst-plugins-good:rtp=enabled
+      - -Dgst-plugins-good:v4l2=enabled
+      - -Dgst-plugins-good:v4l2-probe=true
+      - -Dgst-plugins-good:v4l2-libv4l2=auto
+      - -Dgst-plugins-good:v4l2-gudev=auto
       - -Dbad=enabled
       - -Dgst-plugins-bad:webrtc=enabled
-      - -Dgst-plugins-bad:codectimestamper=enabled
       - -Dgst-plugins-bad:dtls=enabled
       - -Dgst-plugins-bad:srtp=enabled
+      - -Dgst-plugins-bad:videoparsers=enabled
       - -Dugly=enabled
       - -Dgst-plugins-ugly:x264=enabled
       - -Dlibnice=enabled
@@ -89,7 +93,42 @@ parts:
       - libgupnp-1.2-1
       - libgupnp-igd-1.0-4
       - libsrtp2-1
-      - libcairo2
+  libcamera:
+    plugin: meson
+    source: https://github.com/raspberrypi/libcamera.git
+    after:
+      - meson-deps
+      - gstreamer
+    build-packages:
+      - g++
+      - ninja-build
+      - libyaml-dev
+      - python3-yaml
+      - python3-ply
+      - python3-jinja2
+      - libssl-dev
+      - openssl
+      - libevent-dev
+    build-environment:
+      - PKG_CONFIG_PATH: $SNAPCRAFT_STAGE/opt/${SNAPCRAFT_PROJECT_NAME}/lib/pkgconfig:$SNAPCRAFT_STAGE/opt/${SNAPCRAFT_PROJECT_NAME}/lib/${SNAPCRAFT_ARCH_TRIPLET}/pkgconfig:${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}
+    meson-parameters:
+      - --prefix=/opt/${SNAPCRAFT_PROJECT_NAME}
+      - -Dpipelines=rpi/vc4
+      - -Dipas=rpi/vc4
+      - -Dv4l2=true
+      - -Ddocumentation=disabled
+      - -Dtest=false
+      - -Dlc-compliance=disabled
+      - -Dgstreamer=enabled
+      - -Dcam=enabled
+      - -Dpycamera=disabled
+      - -Dqcam=disabled
+      - -Dtracing=disabled
+      - -Dudev=disabled
+    stage-packages:
+      - libevent-2.1-7
+      - libevent-pthreads-2.1-7
+      - libtiff5
   clock:
     plugin: cmake
     source-type: git
@@ -106,6 +145,7 @@ parts:
     after:
       - lws
       - gstreamer
+      - libcamera
     build-packages:
       - g++
       - make
@@ -113,12 +153,13 @@ parts:
       - libspdlog-dev
       - libconfig-dev
       - libmicrohttpd-dev
+      - libssl-dev
     stage-packages:
       - libconfig9
       - libx264-163
       - libspdlog1
       - libmicrohttpd12
-      - fonts-dejavu-core
+      - libssl3
     prime:
       - -usr/lib/arm-linux-gnueabihf/libde265.so.0.1.1
       - -usr/lib/arm-linux-gnueabihf/libmpeg2.so.0.1.0
@@ -130,5 +171,8 @@ apps:
     plugs:
       - network-bind
       - network
+      - camera
+      - media-control
+      - opengl
     environment:
       LD_LIBRARY_PATH: $SNAP/opt/${SNAP_NAME}/lib:$SNAP/opt/${SNAP_NAME}/lib/${SNAPCRAFT_ARCH_TRIPLET}:$LD_LIBRARY_PATH
