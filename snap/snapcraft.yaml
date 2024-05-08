@@ -17,10 +17,9 @@ architectures:
 environment:
   GST_DEBUG: 3
   GST_DEBUG_NO_COLOR: 1
-  GST_PLUGIN_PATH: $SNAP/usr/lib/$SNAPCRAFT_ARCH_TRIPLET/gstreamer-1.0
-  GST_PLUGIN_SYSTEM_PATH: $SNAP/usr/lib/$SNAPCRAFT_ARCH_TRIPLET/gstreamer-1.0
-  GST_PLUGIN_SCANNER: $SNAP/usr/libexec/$SNAPCRAFT_ARCH_TRIPLET/gstreamer-1.0/gst-plugin-scanner
-  LD_LIBRARY_PATH: $SNAP/opt/${SNAP_NAME}/lib
+  GST_PLUGIN_PATH: $SNAP/opt/${SNAP_NAME}/lib/${SNAPCRAFT_ARCH_TRIPLET}/gstreamer-1.0
+  GST_PLUGIN_SYSTEM_PATH: $SNAP/opt/${SNAP_NAME}/lib/${SNAPCRAFT_ARCH_TRIPLET}/gstreamer-1.0
+  GST_PLUGIN_SCANNER: $SNAP/opt/${SNAP_NAME}/libexec/gstreamer-1.0/gst-plugin-scanner
   FONTCONFIG_PATH: $SNAP/etc/fonts/conf.d
   FONTCONFIG_FILE: $SNAP/etc/fonts/fonts.conf
 
@@ -31,25 +30,73 @@ layout:
     bind: $SNAP/usr/share/fonts
 
 parts:
+  meson-deps:
+    plugin: nil
+    override-build: |
+      pip install meson
+    build-packages:
+      - python3-pip
   lws:
     plugin: cmake
     source-type: git
     source: https://github.com/warmcat/libwebsockets.git
     source-branch: v4.3-stable
     cmake-parameters:
+      - -DCMAKE_BUILD_TYPE=Release
       - -DLWS_WITHOUT_TESTAPPS=ON
       - -DLWS_WITH_GLIB=ON
       - -DCMAKE_INSTALL_PREFIX=/opt/${SNAPCRAFT_PROJECT_NAME}
     build-packages:
       - libssl-dev
+      - libglib2.0-dev
     stage-packages:
       - libssl3
+  gstreamer:
+    plugin: meson
+    source: https://github.com/RSATom/gstreamer.git
+    source-branch: 1.22
+    after:
+      - meson-deps
+    build-packages:
+      - ninja-build
+      - flex
+      - bison
+      - nasm
+      - libsrtp2-dev
+      - libcairo2-dev
+    meson-parameters:
+      - --prefix=/opt/${SNAPCRAFT_PROJECT_NAME}
+      - -Dauto_features=disabled
+      - -Dgpl=enabled
+      - -Dgstreamer:ptp-helper-permissions=none
+      - -Dbase=enabled
+      - -Dgst-plugins-base:videotestsrc=enabled
+      - -Dgst-plugins-base:pango=enabled
+      - -Dgood=enabled
+      - -Dgst-plugins-good:rtpmanager=enabled
+      - -Dgst-plugins-good:udp=enabled
+      - -Dgst-plugins-good:rtp=enabled
+      - -Dbad=enabled
+      - -Dgst-plugins-bad:webrtc=enabled
+      - -Dgst-plugins-bad:codectimestamper=enabled
+      - -Dgst-plugins-bad:dtls=enabled
+      - -Dgst-plugins-bad:srtp=enabled
+      - -Dugly=enabled
+      - -Dgst-plugins-ugly:x264=enabled
+      - -Dlibnice=enabled
+      - -Dlibnice:gstreamer=enabled
+    stage-packages:
+      - libgupnp-1.2-1
+      - libgupnp-igd-1.0-4
+      - libsrtp2-1
+      - libcairo2
   clock:
     plugin: cmake
     source-type: git
     source: .
     build-environment:
-      - PKG_CONFIG_PATH: $SNAPCRAFT_STAGE/opt/${SNAPCRAFT_PROJECT_NAME}/lib/pkgconfig:$SNAPCRAFT_STAGE/opt/${SNAPCRAFT_PROJECT_NAME}/lib/$SNAPCRAFT_ARCH_TRIPLET/pkgconfig:${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}
+      - PKG_CONFIG_PATH: ${SNAPCRAFT_STAGE}/opt/${SNAPCRAFT_PROJECT_NAME}/lib/pkgconfig:${SNAPCRAFT_STAGE}/opt/${SNAPCRAFT_PROJECT_NAME}/lib/${SNAPCRAFT_ARCH_TRIPLET}/pkgconfig:${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}
+      - LD_LIBRARY_PATH: $SNAPCRAFT_STAGE/opt/${SNAPCRAFT_PROJECT_NAME}/lib/${SNAPCRAFT_ARCH_TRIPLET}:${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
     cmake-parameters:
       - -DCMAKE_BUILD_TYPE=Release
       - -DCMAKE_INSTALL_PREFIX=/opt/${SNAPCRAFT_PROJECT_NAME}
@@ -58,27 +105,19 @@ parts:
         craftctl set version="$(git describe --always)"
     after:
       - lws
+      - gstreamer
     build-packages:
       - g++
       - make
+      - libglib2.0-dev
       - libspdlog-dev
       - libconfig-dev
-      - libgstreamer1.0-dev
-      - libgstreamer-plugins-bad1.0-dev
       - libmicrohttpd-dev
-      - libnice-dev
     stage-packages:
       - libconfig9
-      - libslang2
-      - libgpm2
-      - libpulse0
       - libx264-163
       - libspdlog1
-      - gstreamer1.0-plugins-good
-      - gstreamer1.0-plugins-bad
-      - gstreamer1.0-plugins-ugly
-      - gstreamer1.0-nice
-      - gstreamer1.0-x
+      - libmicrohttpd12
       - fonts-dejavu-core
     prime:
       - -usr/lib/arm-linux-gnueabihf/libde265.so.0.1.1
@@ -91,3 +130,5 @@ apps:
     plugs:
       - network-bind
       - network
+    environment:
+      LD_LIBRARY_PATH: $SNAP/opt/${SNAP_NAME}/lib:$SNAP/opt/${SNAP_NAME}/lib/${SNAPCRAFT_ARCH_TRIPLET}:$LD_LIBRARY_PATH
