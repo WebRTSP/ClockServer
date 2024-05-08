@@ -24,8 +24,8 @@ environment:
   FONTCONFIG_FILE: $SNAP/etc/fonts/fonts.conf
 
 layout:
-  /opt/webrtsp-clock/lib:
-    symlink: $SNAP/opt/webrtsp-clock/lib
+  /opt/${SNAPCRAFT_PROJECT_NAME}/lib:
+    symlink: $SNAP/opt/${SNAPCRAFT_PROJECT_NAME}/lib
   /usr/share/fonts:
     bind: $SNAP/usr/share/fonts
 
