@@ -57,3 +57,27 @@ cd -
 
 3. Run application: `cd ClockServer && ../ClockServer-build/ClockServer`
 4. Open in browser `http://localhost:5080/`
+
+### How to prepare to use HDMI-to-CSI adapter (TC358743 based) on Raspberry Pi OS
+1. Add to `/boot/config.txt` (or `/boot/firmware/config.txt`)
+```
+dtoverlay=tc358743
+```
+2. [?] Add to `/boot/cmdline.txt` (or `/boot/firmware/cmdline.txt`)
+```
+cma=96M
+```
+3. Reboot
+4. Set EDID for HDMI input (it's required to do it after every boot)
+```
+cd ./edid && ./set_edid.sh && -
+```
+5. [?] Attach HDMI device
+6. [?] Switch to detected resolution
+```
+v4l2-ctl --set-dv-bt-timings query
+```
+7. [?] Change pixel format
+```
+v4l2-ctl -v pixelformat=UYVY
+```

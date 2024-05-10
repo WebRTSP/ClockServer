@@ -10,7 +10,7 @@
 #include "Signalling/WsServer.h"
 #include "Signalling/ServerSession.h"
 #include "RtStreaming/GstRtStreaming/LibGst.h"
-#include "RtStreaming/GstRtStreaming/GstCameraStreamer.h"
+#include "RtStreaming/GstRtStreaming/GstV4L2Streamer.h"
 
 
 static std::unique_ptr<WebRTCPeer> CreatePeer(GstStreamingSource* streamer, const std::string&)
@@ -36,7 +36,7 @@ int main(int argc, char *argv[])
 {
     LibGst libGst;
 
-    GstCameraStreamer streamer;
+    GstV4L2Streamer streamer;
 
     std::shared_ptr<WebRTCConfig> webRTCConfig = std::make_shared<WebRTCConfig>();
     webRTCConfig->iceServers = WebRTCConfig::IceServers { "stun://stun.l.google.com:19302" };
