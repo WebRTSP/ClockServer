@@ -15,14 +15,15 @@
 // #define USE_HW_ENCODER 1
 
 const char* ClockPipeline =
-    "videotestsrc pattern=blue ! video/x-raw, width=640, height=480, framerate=5/1 ! "
-    "clockoverlay halignment=center valignment=center shaded-background=true font-desc=\"Sans, 36\" ! "
-#if USE_HW_ENCODER
-    "v4l2h264enc ! video/x-h264, level=(string)4, profile=(string)constrained-baseline ! "
-#else
-    "x264enc ! video/x-h264, level=(string)4, profile=(string)constrained-baseline ! "
-#endif
-    "rtph264pay pt=99 config-interval=-1";
+    "videotestsrc is-live=true ! video/x-raw, width=1920, height=1080, framerate=30/1 ! "
+    "timeoverlay time-mode=\"stream-time\" ! "
+    "queue ! tee name=t "
+    // "t. ! queue max-size-buffers=0 max-size-bytes=0 max-size-time=5000000000 ! autovideosink sync=false "
+    "t. ! x264enc speed-preset=fast tune=zerolatency ! video/x-h264, level=(string)4, profile=(string)baseline ! "
+    "tee name=t1 "
+    "t1. ! queue max-size-buffers=0 max-size-bytes=0 max-size-time=5000000000 ! rtph264pay pt=99 config-interval=-1 "
+    "t1. ! queue max-size-buffers=0 max-size-bytes=0 max-size-time=5000000000 ! openh264dec ! autovideosink sync=false"
+    ;
 
 static std::unique_ptr<WebRTCPeer> CreatePeer(GstPipelineStreamer2* streamer, const std::string&)
 {
